@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Automated Insight Generator
 
 A Streamlit business dashboard that loads CSV/Excel exports, normalizes and validates business fields, computes KPIs with Pandas/NumPy, visualizes trends with Plotly, optionally answers questions and generates executive recommendations with Google's Gemini API, and downloads reports.
@@ -116,3 +117,7 @@ automated-insight-generator/
 └── sampledata/
     └── salesdata.csv
 ```
+=======
+# AI-Automated-Generator
+An AI-powered platform featuring voice-based interaction, SQL-powered data analysis, automated insights generation, interactive data visualization, and AI-driven chart generation to simplify data exploration and enable smarter decision-making.
+>>>>>>> 1668678aaca8f7841b0cee4146397b393994d374

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root { color-scheme: light dark; font: 14px/1.4 system-ui, sans-serif; }
+    body { margin: 0; color: inherit; }
+    .row { display: flex; align-items: center; gap: 8px; min-height: 42px; }
+    button {
+      border: 1px solid #94a3b8; border-radius: 9px; padding: 8px 12px;
+      background: #0f766e; color: white; font: inherit; font-weight: 600;
+      cursor: pointer;
+    }
+    button.secondary { background: transparent; color: inherit; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    #status { color: #64748b; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="row" id="input-controls" hidden>
+    <button id="listen" type="button">🎙 Speak question</button>
+    <button id="stop-listening" class="secondary" type="button" hidden>Stop</button>
+    <span id="status" role="status" aria-live="polite">Ready</span>
+  </div>
+  <div class="row" id="answer-controls" hidden>
+    <button id="speak" type="button">🔊 Read answer</button>
+    <button id="stop-speaking" class="secondary" type="button">Stop speaking</button>
+    <span id="answer-status" role="status" aria-live="polite"></span>
+  </div>
+  <script>
+    let status = document.querySelector("#status");
+    const inputControls = document.querySelector("#input-controls");
+    const answerControls = document.querySelector("#answer-controls");
+    const inputStatus = document.querySelector("#status");
+    const answerStatus = document.querySelector("#answer-status");
+    let answerText = "";
+    const sendValue = (value) => window.parent.postMessage({
+      isStreamlitMessage: true,
+      type: "streamlit:setComponentValue",
+      value
+    }, "*");
+    const setHeight = () => window.parent.postMessage({
+      isStreamlitMessage: true,
+      type: "streamlit:setFrameHeight",
+      height: document.body.scrollHeight
+    }, "*");
+
+    document.querySelector("#speak").addEventListener("click", () => {
+        if (!("speechSynthesis" in window)) {
+          status.textContent = "Speech playback is not supported in this browser.";
+          return;
+        }
+        window.speechSynthesis.cancel();
+        const cleanText = answerText
+          .replace(/```[\s\S]*?```/g, " ")
+          .replace(/[`*_>#|{}\[\]]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 1600);
+        if (!cleanText) {
+          status.textContent = "There is no readable answer.";
+          return;
+        }
+        status.textContent = "Speaking";
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.onend = () => { status.textContent = "Finished"; };
+        utterance.onerror = () => { status.textContent = "Speech playback failed."; };
+        window.speechSynthesis.speak(utterance);
+    });
+    document.querySelector("#stop-speaking").addEventListener("click", () => {
+        if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+        status.textContent = "Stopped";
+    });
+    const listen = document.querySelector("#listen");
+    const stop = document.querySelector("#stop-listening");
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+    if (!Recognition) {
+      listen.disabled = true;
+      status.textContent = "Speech recognition is not supported; type your question.";
+    } else {
+      recognition = new Recognition();
+      recognition.lang = navigator.language || "en-US";
+      recognition.interimResults = true;
+      recognition.continuous = false;
+      let recognizedTranscript = "";
+      let lastSentTranscript = "";
+      const sendRecognizedTranscript = () => {
+        const transcript = recognizedTranscript.trim();
+        if (!transcript || transcript === lastSentTranscript) return;
+        lastSentTranscript = transcript;
+        status.textContent = "Transcript added. Review it and select Ask AI.";
+        sendValue({
+          text: transcript,
+          status: "recognized",
+          timestamp: Date.now()
+        });
+      };
+      listen.addEventListener("click", () => {
+        recognizedTranscript = "";
+        lastSentTranscript = "";
+        status.textContent = "Listening…";
+        listen.hidden = true;
+        stop.hidden = false;
+        try { recognition.start(); }
+        catch (_) {
+          status.textContent = "Could not start the microphone. Try again or type.";
+          listen.hidden = false;
+          stop.hidden = true;
+        }
+      });
+      stop.addEventListener("click", () => recognition.stop());
+      recognition.onresult = (event) => {
+        const finalTranscript = [];
+        for (let index = 0; index < event.results.length; index += 1) {
+          if (event.results[index].isFinal) {
+            finalTranscript.push(event.results[index][0].transcript);
+          }
+        }
+        recognizedTranscript = finalTranscript.join(" ").trim();
+        if (recognizedTranscript) sendRecognizedTranscript();
+      };
+      recognition.onerror = (event) => {
+        const messages = {
+          "not-allowed": "Microphone permission denied. Type your question instead.",
+          "service-not-allowed": "Speech service unavailable. Type your question instead.",
+          "no-speech": "No speech detected. Try again or type your question."
+        };
+        status.textContent = messages[event.error] || "Speech recognition failed. Type your question.";
+      };
+      recognition.onend = () => {
+        listen.hidden = false;
+        stop.hidden = true;
+        if (recognizedTranscript) sendRecognizedTranscript();
+        else if (status.textContent === "Listening…") status.textContent = "Ready";
+      };
+    }
+    window.addEventListener("message", (event) => {
+      if (!event.data || event.data.type !== "streamlit:render") return;
+      const args = event.data.args || {};
+      const isAnswer = args.mode === "answer";
+      inputControls.hidden = isAnswer;
+      answerControls.hidden = !isAnswer;
+      status = isAnswer ? answerStatus : inputStatus;
+      answerText = args.text || "";
+      if (isAnswer) status.textContent = "";
+      setHeight();
+    });
+    window.parent.postMessage({
+      isStreamlitMessage: true,
+      type: "streamlit:componentReady",
+      apiVersion: 1
+    }, "*");
+    setHeight();
+  </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+Date,Region,Product,Revenue,Expenses,Profit,Sales Quantity
+2025-01-05,North,Analytics Suite,12400,7800,4600,31
+2025-01-12,South,Analytics Suite,9800,6250,3550,24
+2025-01-18,East,Cloud Backup,7600,4100,3500,38
+2025-01-26,West,Cloud Backup,8900,5200,3700,44
+2025-02-04,North,Analytics Suite,13800,8500,5300,34
+2025-02-11,South,Cloud Backup,11200,6900,4300,53
+2025-02-19,East,Analytics Suite,10100,6500,3600,25
+2025-02-25,West,Cloud Backup,9400,5500,3900,47
+2025-03-03,North,Cloud Backup,15100,9100,6000,71
+2025-03-10,South,Analytics Suite,12500,7800,4700,30
+2025-03-17,East,Cloud Backup,11900,7000,4900,59
+2025-03-24,West,Analytics Suite,10800,6800,4000,27
+2025-04-02,North,Analytics Suite,16400,9800,6600,40
+2025-04-09,South,Cloud Backup,13200,7900,5300,62
+2025-04-16,East,Analytics Suite,12700,8100,4600,31
+2025-04-23,West,Cloud Backup,11600,6800,4800,58
